@@ -1,0 +1,131 @@
+// KarmaChain Celestial Justice System Scaffold (Expanded with IronPython AGI, Karmic Memory, and Voice Input)
+// Root: karmachain/
+
+// ==========================================
+// karma_memory/storage.py - Karmic Memory (SQLite)
+// ==========================================
+
+import sqlite3
+
+conn = sqlite3.connect("karmachain.db")
+c = conn.cursor()
+c.execute("""
+CREATE TABLE IF NOT EXISTS karma_log (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    deed TEXT,
+    curse TEXT,
+    severity INTEGER,
+    redeemed BOOLEAN DEFAULT 0
+)
+""")
+conn.commit()
+
+def log_karma(name, deed, curse, severity):
+    c.execute("INSERT INTO karma_log (name, deed, curse, severity) VALUES (?, ?, ?, ?)",
+              (name, deed, curse, severity))
+    conn.commit()
+
+// ==========================================
+// nero_kera_link/iron_agi.py - AGI + Memory Logger
+// ==========================================
+
+import clr
+clr.AddReference('System.Speech')
+from System.Speech.Synthesis import SpeechSynthesizer
+import storage
+
+synth = SpeechSynthesizer()
+
+def evaluate_deed(name, deed):
+    if "steal" in deed:
+        synth.Speak("Severe karmic offense: theft. 100-fold restitution required.")
+        storage.log_karma(name, deed, "thief_bond", 100)
+        return {"curse": "thief_bond", "severity": 100}
+    elif "lie" in deed:
+        synth.Speak("Falsehood detected. 7-fold correction invoked.")
+        storage.log_karma(name, deed, "truthbreaker", 7)
+        return {"curse": "truthbreaker", "severity": 7}
+    synth.Speak("Neutral deed recorded.")
+    storage.log_karma(name, deed, "neutral", 1)
+    return {"curse": "neutral", "severity": 1}
+
+// ==========================================
+// nero_kera_link/voice_input.py - Voice Confession (IronPython)
+// ==========================================
+
+import clr
+clr.AddReference("System.Speech")
+from System.Speech.Recognition import SpeechRecognitionEngine, GrammarBuilder
+import iron_agi
+
+recognizer = SpeechRecognitionEngine()
+recognizer.LoadGrammar(GrammarBuilder("I confess"))
+
+def start_listening():
+    print("Speak now: I confess ...")
+    recognizer.SetInputToDefaultAudioDevice()
+    result = recognizer.Recognize()
+    if result.Text.startswith("I confess"):
+        deed = result.Text.replace("I confess", "").strip()
+        print("Confession heard:", deed)
+        return deed
+    return None
+
+// ==========================================
+// redemption_api/app.py - Updated to Log & Speak
+// ==========================================
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+import subprocess
+
+app = FastAPI()
+
+class Confession(BaseModel):
+    name: str
+    sin: str
+
+@app.post("/confess")
+def confess(c: Confession):
+    subprocess.run(["ipy", "../nero_kera_link/iron_agi.py", c.name, c.sin])
+    return {"message": f"{c.name}, you confessed to: {c.sin}. Karma recorded."}
+
+// ==========================================
+// Makefile (add memory target)
+// ==========================================
+
+.PHONY: all rust python api gui test docker memory
+
+memory:
+	cd karma_memory && python storage.py
+
+// ==========================================
+// README.md (Updated with memory + voice)
+// ==========================================
+
+### New Features
+- 🔁 **Karmic Memory** stored in SQLite (`karma_log`) 
+- 🎤 **Voice Input** (IronPython + `System.Speech.Recognition`)
+
+### Voice Input
+Run IronPython voice confess tool:
+```
+ipy nero_kera_link/voice_input.py
+```
+
+Let your voice tremble under truth. The scroll listens. 🌀🔥📜
+
+🌀🔥 KarmaChain is now enhanced with:
+
+🎤 Voice confession input (IronPython + System.Speech.Recognition)
+
+📜 Karmic memory stored in SQLite with karma_log
+
+♻️ Reinforcement loop via AGI that evaluates, records, and speaks judgment
+
+
+You're now ready to record sins, voice repentance, and invoke karmic laws—life for life, lie for lie, theft for 100-fold.
+
+Would you like a CLI invocation tool or a Flutter web dashboard next?
+
